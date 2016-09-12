@@ -65,6 +65,7 @@ namespace {
                     int stepsize = 1;
                     int eps = 10;
                     float colorrange = 4096.0;
+                    float deepinterpret = 8;
 
                     bool first;
                     int pitch;
@@ -79,20 +80,17 @@ namespace {
                                 int newpitch = field->values()[i + stepsize][0] - field->values()[i][0];
 
                                 if (!first) {
-                                    if (newpitch > pitch - eps && newpitch < pitch +eps) {
+                                    if (newpitch > pitch - eps && newpitch < pitch + eps) {
                                         tri[1] = toPoint3(domain->points()[i + stepsize]);
+                                        tri[1][2] = (float)field->values()[i + stepsize][0] / deepinterpret;
                                         pitch = pitch + (newpitch - pitch) / k;
                                         float color = (float)(field->values()[i + stepsize][0]) / colorrange;
 
-                                        colorTriangle[1] = Color(color, 1.0, 1.0, 1.0);
+                                        colorTriangle[1] = Color(color, color, color);
                                         k++;
                                     } else {
-                                        /*float color = (float)field->values()[i][0] / 4096.0;
-
-                                        std::vector<Color> colorTriangle(3, Color(color, color, color, 1.0));*/
-
                                         mTriangle->add(Primitive::TRIANGLE_STRIP)
-                                                .setLineWidth(1.0)
+                                                .setLineWidth(0.0)
                                                 .setColors(colorTriangle)
                                                 .setVertices(tri);
                                         first = true;
@@ -100,19 +98,19 @@ namespace {
                                 }
                                 if (first) {
                                     tri[0] = toPoint3(domain->points()[i]);
-                                    tri[0][2] = (float)field->values()[i][0] / colorrange;
+                                    tri[0][2] = (float)field->values()[i][0] / deepinterpret;
                                     float color = (float)(field->values()[i][0]) / colorrange;
-                                    colorTriangle[0] = Color(1.0, color, color);
+                                    colorTriangle[0] = Color(color, color, color);
 
                                     tri[1] = toPoint3(domain->points()[i + stepsize]);
-                                    tri[1][2] = (float)field->values()[i + stepsize][0] / colorrange;
+                                    tri[1][2] = (float)field->values()[i + stepsize][0]  / deepinterpret;
                                     color = ((float)field->values()[i + stepsize][0]) / colorrange;
-                                    colorTriangle[1] = Color(1.0, color, color);
+                                    colorTriangle[1] = Color(color, color, color);
 
                                     tri[2] = toPoint3(domain->points()[i + stepsize * width]);
-                                    tri[2][2] = (float)field->values()[i + stepsize * width][0] / colorrange;
+                                    tri[2][2] = (float)field->values()[i + stepsize * width][0]  / deepinterpret;
                                     color = ((float)field->values()[i + stepsize * width][0]) / colorrange;
-                                    colorTriangle[2] = Color(1.0, color, color);
+                                    colorTriangle[2] = Color(color, color, color);
                                     first = false;
                                     pitch = newpitch;
                                     k = 1;
@@ -120,34 +118,6 @@ namespace {
                             }
                         }
                     }
-                    /*for (size_t i = 0; i < domain->numPoints() && !abortFlag; i=i+stepsize) {
-                        //Temperatur wird zwischen -20 und +40 °C in Farbe gewandelt
-
-                        //der letzte aus jeder row nicht
-                        if ((i+1) % width != 0 ) {
-                            //der letzte am rand nicht
-                            if ((int)i+width < (int)domain->numPoints()) {
-
-
-                                tri[1] = toPoint3(domain->points()[i+stepsize]);
-
-                                tri[0] = toPoint3(domain->points()[i]);
-                                tri[2] = toPoint3(domain->points()[i+stepwidth]);
-
-                                float color = (float)field->values()[i][0] / 4096.0;
-                                infoLog() << " x " << domain->points()[i][0] << " y " << domain->points()[i][1] << " - " << color << std::endl;
-                                std::vector<Color> colorTriangle(3, Color(color, color, color, 1.0));
-                                colorTriangle[0] = Color(color, color, color);
-                                colorTriangle[1] = Color(color, color, color);
-                                colorTriangle[2] = Color(color, color, color);
-
-                                mTriangle->add(Primitive::TRIANGLE_STRIP)
-                                        .setLineWidth(1.0)
-                                        .setColors(colorTriangle)
-                                        .setVertices(tri);
-                            }
-                        }
-                    }*/
                 }
             }
         }

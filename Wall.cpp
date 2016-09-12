@@ -82,7 +82,7 @@ namespace
                     //infoLog() << "w " << w << " - gray value " << ((((int)image.at(w * 4 + 0)) + ((int)(image.at(w * 4 + 1)) << 8)) >> 4) << std::endl;
                         int dep = ((((int)image.at((w + h * width) * 4 + 0)) + ((uint8_t)(image.at((w + h * width) * 4 + 1)) << 8)) >> 4);
                         //if (dep != 0) {
-                            positions.push_back(Point2(h, w));
+                            positions.push_back(Point2(w, height-h));
                             depth.push_back(Scalar(dep));
                             pointcount++;
                         //}
