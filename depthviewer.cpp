@@ -1,3 +1,7 @@
+// only include OpenGL if you use a custom drawer. Otherwise,
+// there is no need to include any extra header
+#include <GL/gl.h>
+
 #include <vector>
 #include <utility>
 
@@ -9,29 +13,28 @@
 using namespace fantom;
 
 
+
 #define INPUT_PIN_POSITIONS   "Positions"
 #define INPUT_PIN_DEPTHVALUES "Tiefenwerte"
-#define OUTPUT_NAME           "TriangleStrip"
+#define OUTPUT_NAME           "Pointcloud"
 
 
 namespace
 {
+// inputs
+std::vector<double> m_vecX;
+std::vector<double> m_vecY;
+std::vector<double> m_vecZ;
 
 class cDepthViewer : public VisAlgorithm
 {
 private:
-    // inputs
-    std::vector<Point2> m_vecPositions;
-    std::vector<double> m_vecDepthValues;
-
     // outputs
-    std::unique_ptr<Primitive> m_pTriangle;
+    std::unique_ptr<Primitive> m_pPointCloud;
 
-
-    void InitOutput();
-    void LoadPositions(const Algorithm::Options& options);
-    void LoadDepthValues(const Algorithm::Options& options);
-    void DrawScene();
+    bool InitOutput();
+    bool LoadPositions(const Algorithm::Options& options);
+    bool LoadDepthValues(const Algorithm::Options& options);
 
 
 public:
@@ -77,73 +80,116 @@ public:
         InitOutput();
 
         // read data from input
-        LoadPositions(options);
-        LoadDepthValues(options);
+        if (!LoadPositions(options)) return;
+        if (!LoadDepthValues(options)) return;
 
-        DrawScene();
+        if ((m_vecX.size() == m_vecY.size())
+             && (m_vecY.size() == m_vecZ.size())
+             && (m_vecX.size() == m_vecZ.size()))
+        {
+            debugLog() << "Draw Scene" << std::endl;
+            m_pPointCloud->addCustom(makePointcloudDrawer);
+        }
+        else
+        {
+            debugLog() << "m_vecX: " << m_vecX.size() << std::endl
+                       << "m_vecY: " << m_vecY.size() << std::endl
+                       << "m_vecZ: " << m_vecZ.size() << std::endl;
+        }
+    }
+
+
+    struct GlPointcloudDrawer : public CustomDrawer
+    {
+        GLuint list;
+
+        GlPointcloudDrawer()
+            : list( glGenLists(1))
+        {
+            glNewList(list, GL_COMPILE );
+            glColor3f (1.0, 1.0, 1.0);
+            glBegin(GL_POINTS);
+            for (int i=0; i<=m_vecX.size(); ++i)
+            {
+                float fX = -m_vecX[i];
+                float fY = m_vecY[i];
+                float fZ = -m_vecZ[i];
+                glVertex3f(fX, fY, fZ);
+            }
+            glEnd();
+            glEndList();
+        }
+
+        ~GlPointcloudDrawer()
+        {
+            glDeleteLists( list, 1 );
+        }
+
+        virtual void draw() const
+        {
+            glPushAttrib(GL_ALL_ATTRIB_BITS);
+            glCallList(list);
+            glPopAttrib();
+        }
+    };
+
+    static std::unique_ptr<CustomDrawer> makePointcloudDrawer()
+    {
+        return std::unique_ptr<CustomDrawer>(new GlPointcloudDrawer());
     }
 };
 
 
-void cDepthViewer::InitOutput()
+bool cDepthViewer::InitOutput()
 {
-    m_pTriangle.reset();
-    m_pTriangle = getGraphics(OUTPUT_NAME).makePrimitive();
+    m_pPointCloud.reset();
+    m_pPointCloud = getGraphics(OUTPUT_NAME).makePrimitive();
+    return true;
 }
 
 
-void cDepthViewer::LoadPositions(const Algorithm::Options& options)
+bool cDepthViewer::LoadPositions(const Algorithm::Options& options)
 {
-    infoLog() << "Get Position" << std::endl;
+    infoLog() << "Load Position" << std::endl;
     auto pPositions = options.get<DiscreteDomain<2> >(INPUT_PIN_POSITIONS);
     if (!pPositions)
     {
         debugLog() << "Positions not connected." << std::endl;
-        return;
+        return false;
     }
 
+    m_vecX.clear();
+    m_vecY.clear();
     for (size_t i = 0; i < pPositions->numPoints(); ++i)
     {
-        m_vecPositions.push_back(pPositions->points()[i]);
+        m_vecX.push_back(pPositions->points()[i][0]);
+        m_vecY.push_back(pPositions->points()[i][1]);
     }
+    debugLog() << "VecX: " << m_vecX.size() << " "
+               << "VecY: " << m_vecY.size() << std::endl;
+    return true;
 }
 
 
-void cDepthViewer::LoadDepthValues(const Algorithm::Options& options)
+bool cDepthViewer::LoadDepthValues(const Algorithm::Options& options)
 {
-    infoLog() << "Get DepthValues" << std::endl;
+    infoLog() << "Load DepthValues" << std::endl;
     auto pDepthValues = options.get<TensorFieldDiscrete<Scalar> >(INPUT_PIN_DEPTHVALUES);
     if (!pDepthValues)
     {
         debugLog() << "Tiefenwerte not connected." << std::endl;
-        return;
+        return false;
     }
 
+    m_vecZ.clear();
     auto eval = pDepthValues->makeDiscreteEvaluator();
     for (size_t i=0; i<eval->numValues(); ++i)
     {
-        m_vecDepthValues.push_back(eval->value(i)[0]);
+        m_vecZ.push_back(eval->value(i)[0]);
     }
-}
 
-
-void cDepthViewer::DrawScene()
-{
-    // simple example ...
-    std::vector<Color> vecColorTriangleStrip(3);
-    vecColorTriangleStrip.push_back(Color(1.0, 1.0, 1.0, 1.0));
-    vecColorTriangleStrip.push_back(Color(1.0, 1.0, 1.0, 1.0));
-    vecColorTriangleStrip.push_back(Color(1.0, 1.0, 1.0, 1.0));
-
-    std::vector<Point3> vecTriangleStrip(3);
-    vecTriangleStrip.push_back(Point3(-0.75f, 0.0f, 0.0f));
-    vecTriangleStrip.push_back(Point3( 0.00f, 1.0f, 0.0f));
-    vecTriangleStrip.push_back(Point3( 0.75f, 0.0f, 0.0f));
-
-    m_pTriangle->add(Primitive::TRIANGLE_STRIP)
-            .setLineWidth(1.0)
-            .setColors(vecColorTriangleStrip)
-            .setVertices(vecTriangleStrip);
+    debugLog() << "Tiefenwerte: " << m_vecZ.size() << std::endl;
+    return true;
 }
 
 AlgorithmRegister<cDepthViewer> dummy("DepthViewer", "Show Depth" );
