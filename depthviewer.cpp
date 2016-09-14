@@ -11,15 +11,14 @@
 using namespace fantom;
 
 
-
 #define INPUT_PIN_POSITIONS   "Positions"
 #define INPUT_PIN_DEPTHVALUES "Tiefenwerte"
-#define OUTPUT_NAME           "Pointcloud"
+#define OUTPUT_NAME           "PointCloud"
 
 
 namespace
 {
-// inputs
+// inputs, defined static/global to use in PointCloudDrawer
 std::vector<double> m_vecX;
 std::vector<double> m_vecY;
 std::vector<double> m_vecZ;
@@ -86,7 +85,7 @@ public:
              && (m_vecX.size() == m_vecZ.size()))
         {
             debugLog() << "Draw Scene" << std::endl;
-            m_pPointCloud->addCustom(makePointcloudDrawer);
+            m_pPointCloud->addCustom(makePointCloudDrawer);
         }
         else
         {
@@ -97,11 +96,11 @@ public:
     }
 
 
-    struct GlPointcloudDrawer : public CustomDrawer
+    struct GlPointCloudDrawer : public CustomDrawer
     {
         GLuint list;
 
-        GlPointcloudDrawer()
+        GlPointCloudDrawer()
             : list( glGenLists(1))
         {
             glNewList(list, GL_COMPILE );
@@ -118,7 +117,7 @@ public:
             glEndList();
         }
 
-        ~GlPointcloudDrawer()
+        ~GlPointCloudDrawer()
         {
             glDeleteLists( list, 1 );
         }
@@ -131,9 +130,9 @@ public:
         }
     };
 
-    static std::unique_ptr<CustomDrawer> makePointcloudDrawer()
+    static std::unique_ptr<CustomDrawer> makePointCloudDrawer()
     {
-        return std::unique_ptr<CustomDrawer>(new GlPointcloudDrawer());
+        return std::unique_ptr<CustomDrawer>(new GlPointCloudDrawer());
     }
 };
 
@@ -190,5 +189,5 @@ bool cDepthViewer::LoadDepthValues(const Algorithm::Options& options)
     return true;
 }
 
-AlgorithmRegister<cDepthViewer> dummy("DepthViewer", "Show Depth" );
+AlgorithmRegister<cDepthViewer> dummy("DepthViewer", "Show Depth");
 } // namespace
