@@ -1,5 +1,3 @@
-// only include OpenGL if you use a custom drawer. Otherwise,
-// there is no need to include any extra header
 #include <GL/gl.h>
 
 #include <vector>
