@@ -39,6 +39,7 @@ namespace
             {
                 add<DomainBase>("Points");
                 add<TensorFieldBase>("Tiefenwerte");
+                add<DomainBase>("Minima");
             }
         };
 
@@ -47,6 +48,73 @@ namespace
         {
         }
 
+
+        std::vector<cv::Point> bhContoursCenter(const std::vector<std::vector<cv::Point>>& contours,bool centerOfMass,int contourIdx=-1)
+        {
+            std::vector<cv::Point> result;
+            if (contourIdx > -1)
+            {
+                if (centerOfMass)
+                {
+                    cv::Moments m = cv::moments(contours[contourIdx],true);
+                    result.push_back( cv::Point(m.m10/m.m00, m.m01/m.m00));
+                }
+                else
+                {
+                    cv::Rect rct = cv::boundingRect(contours[contourIdx]);
+                    result.push_back( cv::Point(rct.x + rct.width / 2 ,rct.y + rct.height / 2));
+                }
+            }
+            else
+            {
+                if (centerOfMass)
+                {
+                    for (int i=0; i < contours.size();i++)
+                    {
+                        cv::Moments m = cv::moments(contours[i],true);
+                        result.push_back( cv::Point(m.m10/m.m00, m.m01/m.m00));
+
+                    }
+                }
+                else
+                {
+
+                    for (int i=0; i < contours.size(); i++)
+                    {
+                        cv::Rect rct = cv::boundingRect(contours[i]);
+                        result.push_back(cv::Point(rct.x + rct.width / 2 ,rct.y + rct.height / 2));
+                    }
+                }
+            }
+
+            return result;
+        }
+
+
+        std::vector<cv::Point> bhFindLocalMaximum(cv::InputArray _src,int neighbor=2){
+            cv::Mat src = _src.getMat();
+
+            cv::Mat peak_img = src.clone();
+            cv::dilate(peak_img,peak_img,cv::Mat(),cv::Point(-1,-1),neighbor);
+            peak_img = peak_img - src;
+
+            cv::Mat flat_img ;
+            cv::erode(src,flat_img,cv::Mat(),cv::Point(-1,-1),neighbor);
+            flat_img = src - flat_img;
+
+            cv::threshold(peak_img,peak_img,0,255,CV_THRESH_BINARY);
+            cv::threshold(flat_img,flat_img,0,255,CV_THRESH_BINARY);
+            cv::bitwise_not(flat_img,flat_img);
+
+            peak_img.setTo(cv::Scalar::all(255),flat_img);
+            cv::bitwise_not(peak_img,peak_img);
+
+
+            std::vector<std::vector<cv::Point>> contours;
+            cv::findContours(peak_img,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
+
+            return bhContoursCenter(contours,true);
+        }
 
         void execute(const Algorithm::Options& parameters, const volatile bool& abortFlag)
         {
@@ -78,6 +146,23 @@ namespace
 
                 setResult("Points", domain);
                 setResult("Tiefenwerte", fieldTemperature);
+
+                //infoLog() << "Calculate local minima" << std::endl;
+
+                std::vector<cv::Point> minima;
+
+                std::vector<Point2> vecMinimaPositions;
+                cv::Mat B = cv::imread(sFilename, 0);
+                //invert picture
+                cv::Mat A =  cv::Scalar::all(255) - B;
+                //return minima, because the picture is inverted.
+                minima = bhFindLocalMaximum(A, 10);
+                for (int i = 0; i < minima.size(); i++) {
+                    vecMinimaPositions.push_back(Point2(minima.at(i).x, minima.at(i).y));
+                }
+
+                auto minimaPoints  = DomainFactory::makeDomainArbitrary(vecMinimaPositions);
+                setResult("Minima", minimaPoints);
             }
         }
 
