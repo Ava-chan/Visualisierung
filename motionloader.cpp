@@ -1,3 +1,5 @@
+#include "kinectcsv.h"
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -141,44 +143,23 @@ namespace
                     m_vecJoints.push_back(getGraphics(sJoint).makePrimitive());
                 }
 
-                // std::vector<Scalar> vecTime; // fixed repetition rate so time may be no issue
-
-
                 // TODO: Get motion and copy it into vecJointPositions
                 LoadTestData();
 
-                /*
-                // std::vector<Scalar> vecTime;
+                cKinectCSV oKinect;
+                oKinect.LoadFromFile(sFilename);
+                std::vector<std::vector<fantom::Point3>> vecVecPoint3 = oKinect.GetJoints();
 
-                std::vector<Point3> vecSpineBase;
-                std::vector<Point3> vecSpineMid;
-                std::vector<Point3> vecNeck;
-                std::vector<Point3> vecHead;
-                std::vector<Point3> vecShoulderLeft;
-                std::vector<Point3> vecElbowLeft;
-                std::vector<Point3> vecWristLeft;
-                std::vector<Point3> vecHandLeft;
-                std::vector<Point3> vecShoulderRight;
-                std::vector<Point3> vecElbowRight;
-                std::vector<Point3> vecWristRight;
-                std::vector<Point3> vecHandRight;
-                std::vector<Point3> vecHipLeft;
-                std::vector<Point3> vecKneeLeft;
-                std::vector<Point3> vecAnkleLeft;
-                std::vector<Point3> vecFootLeft;
-                std::vector<Point3> vecHipRight;
-                std::vector<Point3> vecKneeRight;
-                std::vector<Point3> vecAnkleRight;
-                std::vector<Point3> vecFootRight;
-                std::vector<Point3> vecSpineShoulder;
-                std::vector<Point3> vecHandTipLeft;
-                std::vector<Point3> vecThumbLeft;
-                std::vector<Point3> vecHandTipRight;
-                std::vector<Point3> vecThumbRight;
-                */
+                m_vecJointPositions.clear();
+                for (int i=0; i<m_vecJoints.size(); ++i)
+                {
+                    m_vecJointPositions.push_back(vecVecPoint3[i]);
+                }
+
 
                 for (int i=0; i<m_vecJoints.size(); ++i)
                 {
+                    /*
                     debugLog() << m_vecJointNames[i];
                     for (auto oPoint : m_vecJointPositions[i])
                     {
@@ -188,9 +169,10 @@ namespace
                                    << ")";
                     }
                     debugLog() << std::endl;
+                    */
 
-                    m_vecJoints[i]->add(Primitive::LINE_STRIP).setLineWidth(10.0)
-                                                              .setColors(m_vecJointColors[i])
+                    m_vecJoints[i]->add(Primitive::LINE_STRIP).setLineWidth(50.0)
+                                                              .setColor(Color(1.0f, 0.0f, 0.0f))
                                                               .setVertices(m_vecJointPositions[i]);
                 }
             }
