@@ -28,7 +28,7 @@ namespace
             Options(Algorithm::Options::Control& control) : DataAlgorithm::Options(control)
             {
                 add<InputLoadPath>("Input File", "The file to be read", "");
-                add<int>("Minima_difference", "", 9);
+                add<int>("Minima_difference", "", 8);
             }
         };
 

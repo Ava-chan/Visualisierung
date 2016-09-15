@@ -59,7 +59,7 @@ public:
             add<DomainBase>(INPUT_PIN_MINIMA, "A point set");
 
             add<int>("Minima_left_barrier", "", 100);
-            add<int>("Minima_right_barrier", "", 100);
+            add<int>("Minima_right_barrier", "", 130);
             add<int>("Minima_top_barrier", "", 20);
             add<int>("Minima_bottom_barrier", "", 50);
         }
@@ -118,12 +118,15 @@ public:
     {
         GLuint list;
 
+        static bool pointsort (cv::Point3d i,cv::Point3d j) { return (i.z<j.z); }
+
+
         GlPointCloudDrawer()
             : list( glGenLists(1))
         {
             float failuredistance = 0.1;
             // Calclulate Wall
-           /* float qxyz[12] = {0};
+            float qxyz[12] = {0};
             int qc[4] = {0};
             int width=512, height = 424, ignoreedges = 75;
             for (int w = ignoreedges; w < width-ignoreedges; ++w){
@@ -152,24 +155,20 @@ public:
             }
 
             //create plane equation
-            cv::Point3d p = {qxyz[0], qxyz[4],qxyz[8]};
-            cv::Point3d q = {qxyz[1], qxyz[5],qxyz[9]};
-            cv::Point3d r = {qxyz[2], qxyz[6],qxyz[10]};
-
-            cv::Point3d pq = p - q;
-            cv::Point3d pr = p - r;
+            cv::Point3d qol = {qxyz[0], qxyz[4],qxyz[8]};
+            cv::Point3d qor = {qxyz[1], qxyz[5],qxyz[9]};
+            cv::Point3d qul = {qxyz[2], qxyz[6],qxyz[10]};
+            cv::Point3d qur = {qxyz[3], qxyz[7],qxyz[11]};
 
             //crossproduct i,j,k to get the plane normal
-            cv::Point3d n = pq.cross(pr);
+     /*     cv::Point3d n = pq.cross(pr);
             float a = (n.x * p.x + n.y * p.y + n.z * p.z) / cv::sqrt(n.x*n.x +n.y*n.y + n.z*n.z);
-            float d = (n.x * r.x + n.y * r.y + n.z * r.z - a) / cv::sqrt(n.x*n.x +n.y*n.y + n.z*n.z);
-
-*/
-            //float[3] v = {+(q2q3[2]*q2q1[1]+q2q3[1]*q2q1[0]), -(q2q3[2]*q2q1[0]+q2q3[0]*q2q1[2]), +((q2q3[1])*(q2q1[0])+(q2q3[0])*(q2q1[1]))};
+            float d = (n.x * r.x + n.y * r.y + n.z * r.z - a) / cv::sqrt(n.x*n.x +n.y*n.y + n.z*n.z);*/
 
 
 
-            //Draw Wall
+
+            //Draw Wall in points
             glNewList(list, GL_COMPILE );
             glColor3f (1.0, 1.0, 1.0);
             glBegin(GL_POINTS);
@@ -179,8 +178,6 @@ public:
                     float fX = -m_vecX[i];
                     float fY = m_vecY[i];
                     float fZ = -m_vecZ[i];
-                    /*float d = (n.x * fX + n.y * fY + fZ * r.z - a) / cv::sqrt(n.x*n.x +n.y*n.y + n.z*n.z);
-                    if (d < 0)*/
                     glVertex3f(fX, fY, fZ);
                 }
             }
@@ -195,80 +192,56 @@ public:
                 if (m_minima.at(j).y < Minima_top_barrier) continue; // untere schranke
                 if (m_minima.at(j).y > 424 - Minima_bottom_barrier) continue; // obere schranke
 
-                /*float distance = 0;
-                int dc = 0;
-                for (int x = -10; x <= 10; x++) {
-                    for (int y = -10; y <= 10; y ++) {
-                        int rx = maxima.at(j).x + x;
-                        int ry = maxima.at(j).y + y;
-                        int i = (rx) + (ry) * 512;
-                        if (i > 0 && fabs(m_vecZ[i]) > failuredistance) {
-                            distance += fabs(m_vecZ[i]);
-                            dc ++;
-                        }
-                    }
-                }
+                std::vector<cv::Point3d> vec;
 
-                float xh = 0,xl = 0;
-                float yh = 0,yl = 0;
-                float xfactor, yfactor;
+                int av = 15;
 
-                for (int x = -10; x <= 10; x++) {
-                    int rx = maxima.at(j).x + x;
-                    int i = (rx) + maxima.at(j).y+10 * 512;
-                    yh += fabs(m_vecZ[i]);
-                    i = (rx) + maxima.at(j).y-10 * 512;
-                    yl += fabs(m_vecZ[i]);
-                }
+                for (int y = -10; y <= 10; y ++) {
+                    int ai = m_minima.at(j).x + y * 512;
+                    float fZr = -m_vecZ[ai-av];
+                    float fZl = -m_vecZ[ai+av];
 
-                yl = yl / 21.0;
-                yh = yh / 21.0;
-                yfactor = (yh - yl) / 21.0;
+                    float a = (fZl - fZr) /(float)(av+1);
+                    if(fZr< 0.1 || fZl < 0.1) a = 0;
+                    for (int x = -10; x <= 10; x++) {
 
-                for (int y = -10; y <= 10; y++) {
-                    int ry = maxima.at(j).y + y;
-                    int i = maxima.at(j).x + ry * 512;
-                    xh += fabs(m_vecZ[i]);
-                    i = maxima.at(j).x + ry * 512;
-                    xl += fabs(m_vecZ[i]);
-                }
-
-                xl = xl / 21.0;
-                xh = xh / 21.0;
-                xfactor = (xh - xl) / 21.0;
-
-                distance = distance / (float)dc;*/
-
-                for (int x = -10; x <= 10; x++) {
-                    int ys = (x<=0) ? x + 10 : 10 - x;
-
-                    for (int y = -ys; y <= ys; y ++) {
                         int rx = m_minima.at(j).x + x;
                         int ry = m_minima.at(j).y + y;
-                        glColor3f (1.0 - (1.0 / 424.0 * (float)ry), 0.0, (1.0 / 424.0 * (float)ry));
-                        glBegin(GL_QUADS);
+
                         int i = (rx) + (ry) * 512;
-                        if (i > 0 && fabs(m_vecZ[i]) > failuredistance /*&& fabs(m_vecZ[i]) <= distance*/) {
-                            float fX = -m_vecX[i];
-                            float fY = m_vecY[i];
-                            float fZ = -m_vecZ[i];
-                            glVertex3f(fX+0.01, fY+0.01, fZ);
-                            glVertex3f(fX+0.01, fY-0.01, fZ);
-                            glVertex3f(fX-0.01, fY+0.01, fZ);
-                            glVertex3f(fX-0.01, fY-0.01, fZ);
+                        float fX = -m_vecX[i];
+                        float fY = m_vecY[i];
+                        float fZ = -m_vecZ[i];
+
+                        if (i > 0 && fabs(m_vecZ[i]) > failuredistance) {
+                            vec.push_back(cv::Point3d(fX,fY,fZ + ((float)x+10.0)*a*10));
                         }
-                        glEnd();
                     }
                 }
+
+                std::sort (vec.begin(), vec.end(), pointsort);
+
+                for (int i = vec.size() - 5; i < vec.size(); i++) {
+                    glColor3f ((1.0 / 2.0 * vec.at(i).y), 0.0, 1.0 - (1.0 / 2.0 * vec.at(i).y));
+                    glBegin(GL_QUADS);
+
+                    if (i > 0 && fabs(vec.at(i).z) > failuredistance) {
+                        glVertex3f(vec.at(i).x+0.03, vec.at(i).y-0.03, vec.at(i).z);
+                        glVertex3f(vec.at(i).x+0.03, vec.at(i).y+0.03, vec.at(i).z);
+                        glVertex3f(vec.at(i).x-0.03, vec.at(i).y+0.03, vec.at(i).z);
+                        glVertex3f(vec.at(i).x-0.03, vec.at(i).y-0.03, vec.at(i).z);
+                    }
+                    glEnd();
+                }
             }
-/*
+
             glColor3f (1.0, 0.0, 0.0);
-            glBegin(GL_QUADS);
-            glVertex3f(qxyz[1],qxyz[5],qxyz[9]);
-            glVertex3f(qxyz[0],qxyz[4],qxyz[8]);
-            glVertex3f(qxyz[2],qxyz[6],qxyz[10]);
-            glVertex3f(qxyz[3],qxyz[7],qxyz[11]);
-            glEnd();*/
+            glBegin(GL_LINE_LOOP);
+            glVertex3f(qxyz[1],qxyz[5],qxyz[9]); //or
+            glVertex3f(qxyz[0],qxyz[4],qxyz[8]); //ol
+            glVertex3f(qxyz[2],qxyz[6],qxyz[10]); //ul
+            glVertex3f(qxyz[3],qxyz[7],qxyz[11]); //ur
+            glEnd();
 
             glEndList();
 
