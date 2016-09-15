@@ -130,9 +130,46 @@ namespace
             }
         }
 
+        /* http://andrewnoske.com/wiki/Code_-_heatmaps_and_color_gradients */
+        fantom::Color GetHeatMapColor(float fValue)
+        {
+          const int NUM_COLORS = 4;
+          static float color[NUM_COLORS][3] = { {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0} };
+            // A static array of 4 colors:  (blue,   green,  yellow,  red) using {r,g,b} for each.
+
+          int nIdx1;        // |-- Our desired color will be between these two indexes in "color".
+          int nIdx2;        // |
+          float fFractBetween = 0;  // Fraction between "idx1" and "idx2" where our value is.
+
+          if(fValue <= 0)
+          {
+              nIdx1 = nIdx2 = 0;
+          }    // accounts for an input <=0
+          else if(fValue >= 1)
+          {
+              nIdx1 = nIdx2 = NUM_COLORS-1;
+          }    // accounts for an input >=0
+          else
+          {
+            fValue = fValue * (NUM_COLORS-1);        // Will multiply value by 3.
+            nIdx1  = floor(fValue);                  // Our desired color will be after this index.
+            nIdx2  = nIdx1+1;                        // ... and before this index (inclusive).
+            fFractBetween = fValue - float(nIdx1);    // Distance between the two indexes (0-1).
+          }
+
+          return fantom::Color((color[nIdx2][0] - color[nIdx1][0])*fFractBetween + color[nIdx1][0],
+                               (color[nIdx2][1] - color[nIdx1][1])*fFractBetween + color[nIdx1][1],
+                               (color[nIdx2][2] - color[nIdx1][2])*fFractBetween + color[nIdx1][2]);
+        }
+
 
         void execute(const Algorithm::Options& parameters, const volatile bool& abortFlag) override
         {
+            if (abortFlag)
+            {
+                return;
+            }
+
             if (parameters.get<std::string>("Input File") != "")
             {
                 std::string sFilename = parameters.get<std::string>("Input File");
@@ -143,9 +180,6 @@ namespace
                     m_vecJoints.push_back(getGraphics(sJoint).makePrimitive());
                 }
 
-                // TODO: Get motion and copy it into vecJointPositions
-                LoadTestData();
-
                 cKinectCSV oKinect;
                 oKinect.LoadFromFile(sFilename);
                 std::vector<std::vector<fantom::Point3>> vecVecPoint3 = oKinect.GetJoints();
@@ -154,31 +188,19 @@ namespace
                 for (int i=0; i<m_vecJoints.size(); ++i)
                 {
                     m_vecJointPositions.push_back(vecVecPoint3[i]);
-                }
 
+                }
 
                 for (int i=0; i<m_vecJoints.size(); ++i)
                 {
-                    /*
-                    debugLog() << m_vecJointNames[i];
-                    for (auto oPoint : m_vecJointPositions[i])
-                    {
-                        debugLog() << " (" << oPoint[0]
-                                   << ", " << oPoint[1]
-                                   << ", " << oPoint[2]
-                                   << ")";
-                    }
-                    debugLog() << std::endl;
-                    */
-
-                    m_vecJoints[i]->add(Primitive::LINE_STRIP).setLineWidth(50.0)
-                                                              .setColor(Color(1.0f, 0.0f, 0.0f))
+                    m_vecJoints[i]->add(Primitive::LINE_STRIP).setLineWidth(5.0)
+                                                              .setColor(GetHeatMapColor((1.0f / m_vecJoints.size()) * static_cast<float>(i)))
                                                               .setVertices(m_vecJointPositions[i]);
                 }
             }
         }
 
-        IMPLEMENT_CAN_HANDLE(".png")
+        IMPLEMENT_CAN_HANDLE(".csv")
 
         static bool loaderSetOptions(Algorithm::Options& options, std::vector<std::string>& filenames)
         {
