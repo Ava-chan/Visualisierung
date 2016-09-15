@@ -29,7 +29,10 @@ std::vector<double> m_vecY;
 std::vector<double> m_vecZ;
 std::vector<cv::Point> m_minima;
 
-
+int Minima_left_barrier;
+int Minima_right_barrier;
+int Minima_top_barrier;
+int Minima_bottom_barrier;
 
 class cDepthViewer : public VisAlgorithm
 {
@@ -54,6 +57,11 @@ public:
             add<DomainBase>(INPUT_PIN_POSITIONS, "A point set or grid");
             add<TensorFieldDiscrete<Scalar>>(INPUT_PIN_DEPTHVALUES, "A scattered scalar field");
             add<DomainBase>(INPUT_PIN_MINIMA, "A point set");
+
+            add<int>("Minima_left_barrier", "", 100);
+            add<int>("Minima_right_barrier", "", 100);
+            add<int>("Minima_top_barrier", "", 20);
+            add<int>("Minima_bottom_barrier", "", 50);
         }
     };
 
@@ -182,10 +190,10 @@ public:
             for (int j=0; j < m_minima.size(); ++j)
             {
                 //Randbereiche ausschließen
-                if (m_minima.at(j).x < 100) continue; // linke schranke
-                if (m_minima.at(j).x > 512 - 150) continue; // rechte schranke
-                if (m_minima.at(j).y < 20) continue; // untere schranke
-                if (m_minima.at(j).y > 424 - 50) continue; // obere schranke
+                if (m_minima.at(j).x < Minima_left_barrier) continue; // linke schranke
+                if (m_minima.at(j).x > 512 - Minima_right_barrier) continue; // rechte schranke
+                if (m_minima.at(j).y < Minima_top_barrier) continue; // untere schranke
+                if (m_minima.at(j).y > 424 - Minima_bottom_barrier) continue; // obere schranke
 
                 /*float distance = 0;
                 int dc = 0;
@@ -349,6 +357,11 @@ bool cDepthViewer::LoadMinima(const Algorithm::Options& options)
         debugLog() << "Minima not connected." << std::endl;
         return false;
     }
+
+    Minima_left_barrier = options.get<int>("Minima_left_barrier");
+    Minima_right_barrier = options.get<int>("Minima_right_barrier");
+    Minima_top_barrier = options.get<int>("Minima_top_barrier");
+    Minima_bottom_barrier = options.get<int>("Minima_bottom_barrier");
 
     m_minima.clear();
     for (size_t i = 0; i < minValues->numPoints(); ++i)

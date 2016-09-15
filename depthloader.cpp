@@ -28,6 +28,7 @@ namespace
             Options(Algorithm::Options::Control& control) : DataAlgorithm::Options(control)
             {
                 add<InputLoadPath>("Input File", "The file to be read", "");
+                add<int>("Minima_difference", "", 9);
             }
         };
 
@@ -156,7 +157,7 @@ namespace
                 //invert picture
                 cv::Mat A =  cv::Scalar::all(255) - B;
                 //return minima, because the picture is inverted.
-                minima = bhFindLocalMaximum(A, 10);
+                minima = bhFindLocalMaximum(A, parameters.get<int>("Minima_difference"));
                 for (int i = 0; i < minima.size(); i++) {
                     vecMinimaPositions.push_back(Point2(minima.at(i).x, minima.at(i).y));
                 }
